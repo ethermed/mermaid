@@ -4,8 +4,8 @@ defmodule MermaidParserTest do
 
   describe "nodes" do
     [
-      # ["id", [id: ["id"]]],
-      # ["longer_id", [id: ["longer_id"]]],
+      ["id", [id: ["id"]]],
+      ["longer_id", [id: ["longer_id"]]],
       ["id[hi]", [id: ["id"], desc: ["hi"]]],
       ["id[HI]", [id: ["id"], desc: ["HI"]]],
       ["id[HI there]", [id: ["id"], desc: ["HI there"]]],

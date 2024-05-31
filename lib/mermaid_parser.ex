@@ -44,7 +44,7 @@ defmodule MermaidParser do
 
 
 
-  defparsec(:nodee, identifier |> concat(desc))
+  defparsec(:nodee, identifier |> optional(desc))
 
   def parse_node(input), do: nodee(input) |> parse_response()
 
