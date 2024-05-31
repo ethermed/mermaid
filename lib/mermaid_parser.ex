@@ -1,131 +1,56 @@
 defmodule MermaidParser do
   import NimbleParsec
 
-  @string_head [?a..?z, ?A..?Z, ?0..?9, ?_]
-  @string_no_whitespace [?a..?z, ?A..?Z, ?0..?9, ?_, ??, ?!, ?-]
-  @string_whitespace [?a..?z, ?A..?Z, ?0..?9, ?_, ??, ?!, ?-, ?\s]
-  @string_tail [?a..?z, ?A..?Z, ?0..?9, ?_, ?\s, ??]
+  @alphanumeric [?a..?z, ?A..?Z, ?0..?9, ?_]
+  # Yup. I used an ascii table. I'm basically Mark Watney.
+  # https://www.asciitable.com/
+  @not_shape [?\s..?!, ?*..?;, ??..?Z, ?^..?z]
+  @shape_end [?], ?>, ?)]
 
-  blankspace = ignore(ascii_string([?\s], min: 1))
-  newline = ignore(ascii_char([?\n]))
-  transition_start = ignore(string("--"))
-  transition_op = string("-->")
-  label_start = ascii_char([?[, ?{, ?<])
-  label_end = ascii_char([?\], ?}, ?>])
+  identifier =
+    ascii_char([?a..?z])
+    |> optional(ascii_string(@alphanumeric, min: 1))
+    |> optional(ascii_char([??, ?!]))
+    |> reduce({IO, :iodata_to_binary, []})
+    |> tag(:id)
 
-  # any string we want to keep together
-  single_string =
-    optional(blankspace)
-    |> optional(ascii_string(@string_no_whitespace, min: 1))
-    |> optional(blankspace)
+  shape_start =
+    ignore(choice([
+      string("["),
+      string("<"),
+      string("("),
+    ]))
 
-  sentence_string =
-    optional(blankspace)
-    |> ascii_string(@string_whitespace, min: 1)
-    # |> optional(lookahead(string(" ")))
-    |> reduce({Enum, :join, []})
-    |> reduce({__MODULE__, :trim, []})
+  shape_end =
+    ignore(choice([
+      string("]"),
+      string(">"),
+      string(")"),
+    ]))
+
+  quoted_desc =
+    ignore(string("\""))
+    |> utf8_string([not: ?\"..?\"], min: 1)
+    |> ignore(string("\""))
+    |> lookahead(shape_end)
+
+  unquoted_desc =
+    ascii_string(@not_shape, min: 1)
+    |> ignore(shape_end)
+
+  desc = shape_start
+  |> choice([ quoted_desc, unquoted_desc ])
+  |> tag(:desc)
 
 
-  # any_string = choice([sentence_string, single_string])
-    # ascii_char(@string_head)
-    # |> optional(ascii_string(@string_tail, min: 1))
-    # |> optional(ascii_char(@string_head))
-    # |> optional(blankspace)
-    # |> reduce({IO, :iodata_to_binary, []})
 
-  # [hi], {hi}, <hi>
-  label =
-    ignore(label_start)
-    |> optional(blankspace)
-    |> concat(sentence_string)
-    |> optional(blankspace)
-    |> ignore(label_end)
+  defparsec(:nodee, identifier |> concat(desc))
 
+  def parse_node(input), do: nodee(input) |> parse_response()
 
-  # id[label], id, id{label}, id<label>
-  step =
-    optional(blankspace)
-    |> concat(single_string)
-    |> optional(blankspace)
-    |> optional(label)
-    |> optional(blankspace)
-    |> reduce({__MODULE__, :id_coalesce, []})
-
-  # |event|, |event string|
-  event =
-    ignore(string("|"))
-    |> concat(sentence_string)
-    |> ignore(string("|"))
-
-  # -- event -->, -- event string -->, --event-->, --event string-->
-  inline_event =
-    optional(blankspace)
-    |> ignore(transition_start)
-    |> optional(blankspace)
-    |> concat(single_string)
-    |> debug()
-    |> optional(blankspace)
-    |> ignore(transition_op)
-    |> optional(blankspace)
-
-  # -->|event|
-  pipe_event =
-    optional(blankspace)
-    |> ignore(transition_op)
-    |> optional(blankspace)
-    |> concat(event)
-
-  # -->
-  no_event =
-    optional(blankspace)
-    |> ignore(transition_op)
-    |> optional(blankspace)
-
-  event =
-    choice([inline_event, pipe_event, no_event])
-
-  new_mermaid_line =
-    step
-    |> concat(event)
-    |> concat(step)
-    |> optional(ignore(newline))
-    |> tag(:line)
-
-  malformed =
-    optional(utf8_string([not: ?\n], min: 1))
-    |> string("\n")
-    |> pre_traverse(:abort)
-
-  # flowchart TD, flowchart LR
-  flowchart_header =
-    ignore(string("flowchart"))
-    |> ignore(blankspace)
-    |> ignore(choice([string("TD"), string("LR")]))
-    |> optional(blankspace)
-    |> optional(ignore(newline))
-
-  defparsec(:inline_event, inline_event)
-  defparsec(:event, event)
-  defparsec(:sentence, sentence_string)
-  defparsec(:label, label)
-  defparsec(:step, step)
-  defparsec(:flow, times(choice([flowchart_header, new_mermaid_line, malformed]), min: 1))
-
-  def parse_flow(input) do
-    case flow(input) do
-      {:ok, lines, _, _, _, _} ->
-        {:ok, lines}
-    end
-  end
-
-  def parse_step(input), do: step(input) |> parse_response()
-  def parse_label(input), do: label(input) |> parse_response()
-  def parse_sentence(input), do: sentence(input) |> parse_response()
-  def parse_event(input), do: event(input) |> parse_response()
-
-  defp parse_response({:ok, [line], _, _, _, _}), do: {:ok, line}
   defp parse_response({:ok, [], _, _, _, _}), do: {:ok, nil}
+  defp parse_response({:ok, result, _, _, _, _}), do: {:ok, result}
+  # defp parse_response({:error, result, _, _, _, _}), do: {:ok, result}
 
   @spec abort(
           String.t(),
@@ -143,9 +68,4 @@ defmodule MermaidParser do
      meta <>
        "|||malformed Flow transition (line: #{line}, column: #{column - offset}), expected `from --> |event| to`"}
   end
-
-  def id_coalesce([id]), do: id
-  def id_coalesce([id, [label]]), do: {id, label}
-
-  def trim([input]), do: [String.trim(input)]
 end
