@@ -5,13 +5,16 @@ defmodule MermaidParser do
   # Yup. I used an ascii table. I'm basically Mark Watney.
   # https://www.asciitable.com/
   @not_shape [?\s..?!, ?*..?;, ??..?Z, ?^..?z]
-  @shape_end [?], ?>, ?)]
+  @not_shape_or_line [?\s..?!, ?*..?,, ?...?;, ??..?Z, ?^..?z]
+  # @shape_end [?], ?>, ?)]
 
-  identifier =
-    ascii_char([?a..?z])
+  blankspace = optional(ignore(ascii_string([?\s], min: 1)))
+
+  identifier = optional(blankspace)
     |> optional(ascii_string(@alphanumeric, min: 1))
     |> optional(ascii_char([??, ?!]))
     |> reduce({IO, :iodata_to_binary, []})
+    |> concat(blankspace)
     |> tag(:id)
 
   shape_start =
@@ -19,6 +22,7 @@ defmodule MermaidParser do
       string("["),
       string("<"),
       string("("),
+      string("{"),
     ]))
 
   shape_end =
@@ -26,6 +30,7 @@ defmodule MermaidParser do
       string("]"),
       string(">"),
       string(")"),
+      string("}"),
     ]))
 
   quoted_desc =
@@ -33,6 +38,7 @@ defmodule MermaidParser do
     |> utf8_string([not: ?\"..?\"], min: 1)
     |> ignore(string("\""))
     |> lookahead(shape_end)
+    |> ignore(shape_end)
 
   unquoted_desc =
     ascii_string(@not_shape, min: 1)
@@ -42,14 +48,85 @@ defmodule MermaidParser do
   |> choice([ quoted_desc, unquoted_desc ])
   |> tag(:desc)
 
+  complete_id = identifier |> optional(desc)
 
-
-  defparsec(:nodee, identifier |> optional(desc))
+  defparsec(:nodee, complete_id)
 
   def parse_node(input), do: nodee(input) |> parse_response()
 
-  defp parse_response({:ok, [], _, _, _, _}), do: {:ok, nil}
-  defp parse_response({:ok, result, _, _, _, _}), do: {:ok, result}
+  @line [?-, ?=]
+  @arrow [?>]
+  line = ignore(ascii_string(@line, min: 1))
+  arrow = ignore(ascii_char(@arrow))
+  pipe = ignore(string("|"))
+  newline = ignore(ascii_char([?\n]))
+  # ignore_rest_of_line = ignore(blankspace) |> ignore(newline)
+
+  pipe_event = arrow
+  |> concat(pipe)
+  |> ascii_string([not: ?|], min: 1)
+  |> concat(pipe)
+  |> reduce({__MODULE__, :trim, []})
+  |> concat(blankspace)
+  |> tag(:event)
+
+  inline_event = optional(blankspace)
+  |> ascii_string(@not_shape_or_line, min: 1)
+  |> concat(line)
+  |> concat(arrow)
+  |> reduce({__MODULE__, :trim, []})
+  |> concat(blankspace)
+  |> tag(:event)
+
+  nameless_event = optional(blankspace)
+  # |> concat(line)
+  |> concat(arrow)
+  |> replace("empty")
+  |> optional(blankspace)
+  |> tag(:event)
+
+  event = optional(blankspace)
+  |> concat(line)
+  |> choice([inline_event, pipe_event, nameless_event])
+
+  defparsec(:event, event)
+  def parse_event(input), do: event(input) |> parse_response
+
+  complete_line = tag(complete_id, :src)
+  |> optional(blankspace)
+  |> concat(event)
+  |> optional(blankspace)
+  |> concat(tag(complete_id, :dest))
+  |> tag(:row)
+  |> optional(newline)
+
+  defparsec(:complete_line, complete_line)
+  def parse_complete_line(input), do: complete_line(input) |> parse_response
+
+  flowchart_header =
+    ignore(string("flowchart"))
+    |> ignore(blankspace)
+    |> ignore(choice([string("TD"), string("TB"), string("BT"), string("RL"), string("LR")]))
+    |> optional(blankspace)
+    |> optional(newline)
+    # |> eos()
+
+    defparsec(:flowchart_header, flowchart_header)
+  def parse_header(input), do: flowchart_header(input) |> IO.inspect() |> parse_response
+
+  malformed =
+    optional(utf8_string([not: ?\n], min: 1))
+    |> string("\n")
+    |> pre_traverse(:abort)
+
+  flow = times(choice([flowchart_header, complete_line, malformed]), min: 1)
+  # flow = times(choice([complete_line, newline]), min: 1)
+
+  defparsec(:flow, flow)
+  def parse_flow(input), do: flow(input) |> parse_response
+
+  defp parse_response({:ok, [], rem, _, _, _}), do: {:ok, nil, rem}
+  defp parse_response({:ok, result, rem, _, _, _}), do: {:ok, result, rem}
   # defp parse_response({:error, result, _, _, _, _}), do: {:ok, result}
 
   @spec abort(
@@ -66,6 +143,8 @@ defmodule MermaidParser do
 
     {:error,
      meta <>
-       "|||malformed Flow transition (line: #{line}, column: #{column - offset}), expected `from --> |event| to`"}
+       "|||malformed (line: #{line}, column: #{column - offset})"}
   end
+
+  def trim([input]), do: String.trim(input)
 end
