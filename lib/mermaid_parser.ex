@@ -1,6 +1,7 @@
 defmodule MermaidParser do
   import NimbleParsec
   require Logger
+  defdelegate parse(mermaid_flow), to: MermaidParser.Flow
 
   @alphanumeric [?a..?z, ?A..?Z, ?0..?9, ?_]
   # Yup. I used an ascii table. I'm basically Mark Watney.

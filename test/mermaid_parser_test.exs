@@ -138,6 +138,5 @@ defmodule MermaidParserTest do
     ]
 
     assert {:ok, ^expected, "", _, _, _} = MermaidParser.flow(flow)
-    # assert false
   end
 end

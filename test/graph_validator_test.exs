@@ -3,7 +3,7 @@ defmodule MermaidParser.GraphTest do
   doctest MermaidParser.GraphValidator
   alias MermaidParser.GraphValidator
 
-  describe "to_digraph/1" do
+  describe "validate/1" do
     setup do
       data = [
         [

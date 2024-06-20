@@ -1,5 +1,25 @@
 defmodule MermaidParser.GraphValidator do
-  def to_digraph(data) do
+  alias MermaidParser.Flow
+  alias MermaidParser.FlowRow
+
+  @spec to_digraph( list() | %MermaidParser.Flow{} ) :: {:ok, :digraph.graph()} | {:error, String.t()}
+  def validate(input) do
+    graph = to_digraph(input)
+
+    case is_acyclic(graph) do
+      true ->
+        case is_arborescence(graph) do
+          true -> {:ok, graph}
+          false -> {:error, "Graph is not an arborescence"}
+        end
+
+      false ->
+        {:error, "Graph is not acyclic"}
+    end
+  end
+
+  @spec to_digraph( list() | %MermaidParser.Flow{} ) :: :digraph.graph()
+  def to_digraph(data) when is_list(data) do
     # Create a new digraph
     graph = :digraph.new()
 
@@ -18,6 +38,18 @@ defmodule MermaidParser.GraphValidator do
 
       # Add edge between source and destination
       :digraph.add_edge(graph, src_id, dest_id, event)
+    end)
+
+    graph
+  end
+
+  def to_digraph(%Flow{rows: rows}) do
+    graph = :digraph.new()
+
+    Enum.each(rows, fn %FlowRow{} = row ->
+      ensure_vertex(graph, row.src.id, row.src.desc)
+      ensure_vertex(graph, row.dest.id, row.dest.desc)
+      :digraph.add_edge(graph, row.src.id, row.dest.id, row.event)
     end)
 
     graph
