@@ -1,5 +1,6 @@
 defmodule MermaidParserTest do
   use ExUnit.Case
+
   doctest MermaidParser
 
   @nodes [

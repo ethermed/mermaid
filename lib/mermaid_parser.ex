@@ -1,5 +1,6 @@
 defmodule MermaidParser do
   import NimbleParsec
+  require Logger
 
   @alphanumeric [?a..?z, ?A..?Z, ?0..?9, ?_]
   # Yup. I used an ascii table. I'm basically Mark Watney.
@@ -8,31 +9,40 @@ defmodule MermaidParser do
   @not_shape_or_line [?\s..?!, ?*..?,, ?...?;, ??..?Z, ?^..?z]
   # @shape_end [?], ?>, ?)]
 
+  # We don't generally care about spaces between interesting bits, so they're both optional and ignored.
   blankspace = optional(ignore(ascii_string([?\s], min: 1)))
 
-  identifier = optional(blankspace)
+  # the id of a node
+  identifier =
+    optional(blankspace)
     |> optional(ascii_string(@alphanumeric, min: 1))
     |> optional(ascii_char([??, ?!]))
     |> reduce({IO, :iodata_to_binary, []})
     |> concat(blankspace)
     |> tag(:id)
 
+  # There are more shapes than this. Will need to upgrade this for completeness.
   shape_start =
-    ignore(choice([
-      string("["),
-      string("<"),
-      string("("),
-      string("{"),
-    ]))
+    ignore(
+      choice([
+        string("["),
+        string("<"),
+        string("("),
+        string("{")
+      ])
+    )
 
   shape_end =
-    ignore(choice([
-      string("]"),
-      string(">"),
-      string(")"),
-      string("}"),
-    ]))
+    ignore(
+      choice([
+        string("]"),
+        string(">"),
+        string(")"),
+        string("}")
+      ])
+    )
 
+  # The description of a node can be quoted or unquoted.
   quoted_desc =
     ignore(string("\""))
     |> utf8_string([not: ?\"..?\"], min: 1)
@@ -44,9 +54,10 @@ defmodule MermaidParser do
     ascii_string(@not_shape, min: 1)
     |> ignore(shape_end)
 
-  desc = shape_start
-  |> choice([ quoted_desc, unquoted_desc ])
-  |> tag(:desc)
+  desc =
+    shape_start
+    |> choice([quoted_desc, unquoted_desc])
+    |> tag(:desc)
 
   complete_id = identifier |> optional(desc)
 
@@ -62,43 +73,48 @@ defmodule MermaidParser do
   newline = ignore(ascii_char([?\n]))
   # ignore_rest_of_line = ignore(blankspace) |> ignore(newline)
 
-  pipe_event = arrow
-  |> concat(pipe)
-  |> ascii_string([not: ?|], min: 1)
-  |> concat(pipe)
-  |> reduce({__MODULE__, :trim, []})
-  |> concat(blankspace)
-  |> tag(:event)
+  pipe_event =
+    arrow
+    |> concat(pipe)
+    |> ascii_string([not: ?|], min: 1)
+    |> concat(pipe)
+    |> reduce({__MODULE__, :trim, []})
+    |> concat(blankspace)
+    |> tag(:event)
 
-  inline_event = optional(blankspace)
-  |> ascii_string(@not_shape_or_line, min: 1)
-  |> concat(line)
-  |> concat(arrow)
-  |> reduce({__MODULE__, :trim, []})
-  |> concat(blankspace)
-  |> tag(:event)
+  inline_event =
+    optional(blankspace)
+    |> ascii_string(@not_shape_or_line, min: 1)
+    |> concat(line)
+    |> concat(arrow)
+    |> reduce({__MODULE__, :trim, []})
+    |> concat(blankspace)
+    |> tag(:event)
 
-  nameless_event = optional(blankspace)
-  # |> concat(line)
-  |> concat(arrow)
-  |> replace("empty")
-  |> optional(blankspace)
-  |> tag(:event)
+  nameless_event =
+    optional(blankspace)
+    # |> concat(line)
+    |> concat(arrow)
+    |> replace("empty")
+    |> optional(blankspace)
+    |> tag(:event)
 
-  event = optional(blankspace)
-  |> concat(line)
-  |> choice([inline_event, pipe_event, nameless_event])
+  event =
+    optional(blankspace)
+    |> concat(line)
+    |> choice([inline_event, pipe_event, nameless_event])
 
   defparsec(:event, event)
   def parse_event(input), do: event(input) |> parse_response
 
-  complete_line = tag(complete_id, :src)
-  |> optional(blankspace)
-  |> concat(event)
-  |> optional(blankspace)
-  |> concat(tag(complete_id, :dest))
-  |> tag(:row)
-  |> optional(newline)
+  complete_line =
+    tag(complete_id, :src)
+    |> optional(blankspace)
+    |> concat(event)
+    |> optional(blankspace)
+    |> concat(tag(complete_id, :dest))
+    |> tag(:row)
+    |> optional(newline)
 
   defparsec(:complete_line, complete_line)
   def parse_complete_line(input), do: complete_line(input) |> parse_response
@@ -109,9 +125,8 @@ defmodule MermaidParser do
     |> ignore(choice([string("TD"), string("TB"), string("BT"), string("RL"), string("LR")]))
     |> optional(blankspace)
     |> optional(newline)
-    # |> eos()
 
-    defparsec(:flowchart_header, flowchart_header)
+  defparsec(:flowchart_header, flowchart_header)
   def parse_header(input), do: flowchart_header(input) |> IO.inspect() |> parse_response
 
   malformed =
@@ -119,10 +134,9 @@ defmodule MermaidParser do
     |> string("\n")
     |> pre_traverse(:abort)
 
-  flow = times(choice([flowchart_header, complete_line, malformed]), min: 1)
-  # flow = times(choice([complete_line, newline]), min: 1)
+  flow_parse = times(choice([flowchart_header, complete_line, malformed]), min: 1)
 
-  defparsec(:flow, flow)
+  defparsec(:flow, flow_parse)
   def parse_flow(input), do: flow(input) |> parse_response
 
   defp parse_response({:ok, [], rem, _, _, _}), do: {:ok, nil, rem}
