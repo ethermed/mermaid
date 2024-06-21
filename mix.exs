@@ -1,9 +1,9 @@
-defmodule MermaidParser.MixProject do
+defmodule Mermaid.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :mermaid_parser,
+      app: :mermaid,
       version: "0.1.0",
       elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,

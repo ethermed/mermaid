@@ -1,21 +1,47 @@
-defmodule MermaidParser.FlowTest do
-	use ExUnit.Case
-	doctest MermaidParser.Flow
-	alias MermaidParser.Flow
-  alias MermaidParser.FlowRow
-  alias MermaidParser.Node
+defmodule Mermaid.FlowTest do
+  use ExUnit.Case
+  doctest Mermaid.Flow
+  alias Mermaid.Flow
+  alias Mermaid.FlowRow
+  alias Mermaid.Node
 
-  test "parse_all" do
-    mermaid_flow = """
-    flowchart TD
-      A[Start] --> B{Is the individual at average risk?}
-      B -->|Yes| C{Is the individual 45 years old or older?}
-      B -->|No| D{Does the individual meet any diagnostic criteria?}
-      C -->|Yes| E[Screening CTC is indicated at 5-year intervals]
-      C -->|No| F[Not Medically Necessary]
-      D -->|Yes good| G[Diagnostic CTC is indicated]
-      D --No not really--> F
-    """
+  test "new/1" do
+    mermaid_flow = [
+      row: [
+        src: [id: ["A"], desc: ["Start"]],
+        event: ["empty"],
+        dest: [id: ["B"], desc: ["Is the individual at average risk?"]]
+      ],
+      row: [
+        src: [id: ["B"]],
+        event: ["Yes"],
+        dest: [id: ["C"], desc: ["Is the individual 45 years old or older?"]]
+      ],
+      row: [
+        src: [id: ["B"]],
+        event: ["No"],
+        dest: [
+          id: ["D"],
+          desc: ["Does the individual meet any diagnostic criteria?"]
+        ]
+      ],
+      row: [
+        src: [id: ["C"]],
+        event: ["Yes"],
+        dest: [id: ["E"], desc: ["Screening CTC is indicated at 5-year intervals"]]
+      ],
+      row: [
+        src: [id: ["C"]],
+        event: ["No"],
+        dest: [id: ["F"], desc: ["Not Medically Necessary"]]
+      ],
+      row: [
+        src: [id: ["D"]],
+        event: ["Yes good"],
+        dest: [id: ["G"], desc: ["Diagnostic CTC is indicated"]]
+      ],
+      row: [src: [id: ["D"]], event: ["No not really"], dest: [id: ["F"]]]
+    ]
 
     flow = %Flow{
       rows: [
@@ -57,7 +83,6 @@ defmodule MermaidParser.FlowTest do
       ]
     }
 
-    assert {:ok, flow} == Flow.parse(mermaid_flow)
+    assert {:ok, flow} == Flow.new(mermaid_flow)
   end
-
 end

@@ -1,7 +1,8 @@
-defmodule MermaidParserTest do
+defmodule Mermaid.ParserTest do
   use ExUnit.Case
+  alias Mermaid.Parser
 
-  doctest MermaidParser
+  doctest Mermaid.Parser
 
   @nodes [
     [" id ", [id: ["id"]]],
@@ -38,7 +39,7 @@ defmodule MermaidParserTest do
       @input input
       @output output
       test "parse |#{@input}| outputs |#{inspect(@output)}|" do
-        assert MermaidParser.parse_node(@input) == {:ok, @output, ""}
+        assert Parser.parse_node(@input) == {:ok, @output, ""}
       end
     end)
   end
@@ -49,12 +50,11 @@ defmodule MermaidParserTest do
       @input input
       @output output
       test "parse |#{@input}| outputs |#{inspect(@output)}|" do
-        assert MermaidParser.parse_event(@input) == {:ok, @output, ""}
+        assert Parser.parse_event(@input) == {:ok, @output, ""}
       end
     end)
   end
 
-  @tag :focus
   describe "lines" do
     test "all combinations" do
       Enum.each(@nodes, fn [src_inp, src_out] ->
@@ -62,7 +62,7 @@ defmodule MermaidParserTest do
           Enum.each(@nodes, fn [dest_inp, dest_out] ->
             line = "#{src_inp} #{event_inp} #{dest_inp}"
             expected = [row: [src: src_out] ++ event_out ++ [dest: dest_out]]
-            assert MermaidParser.parse_complete_line(line) == {:ok, expected, ""}
+            assert Parser.parse_complete_line(line) == {:ok, expected, ""}
           end)
         end)
       end)
@@ -70,20 +70,20 @@ defmodule MermaidParserTest do
 
     test "specific challenge" do
       line = "  B -->|Yes| C{Is the individual 45 years old or older?}"
-      assert {:ok, _, ""} = MermaidParser.parse_complete_line(line)
+      assert {:ok, _, ""} = Parser.parse_complete_line(line)
     end
   end
 
   describe "flowchart tag" do
     test "flowchart tag" do
       line = "flowchart TD"
-      assert {:ok, [], "", _, _, _} = MermaidParser.flowchart_header(line)
+      assert {:ok, [], "", _, _, _} = Parser.flowchart_header(line)
     end
 
     test "flowchart tag <newline>" do
       line = ~s(flowchart TD
       )
-      assert {:ok, [], "      ", _, _, _} = MermaidParser.flowchart_header(line)
+      assert {:ok, [], "      ", _, _, _} = Parser.flowchart_header(line)
     end
   end
 
@@ -137,6 +137,6 @@ defmodule MermaidParserTest do
       row: [src: [id: ["D"]], event: ["No not really"], dest: [id: ["F"]]]
     ]
 
-    assert {:ok, ^expected, "", _, _, _} = MermaidParser.flow(flow)
+    assert {:ok, ^expected, "", _, _, _} = Parser.parse(flow)
   end
 end

@@ -1,23 +1,16 @@
-defmodule MermaidParser.Flow do
+defmodule Mermaid.Flow do
   defstruct [:rows]
-  alias MermaidParser.Flow
-  alias MermaidParser.FlowRow
-  alias MermaidParser.Node
+  alias Mermaid.Flow
+  alias Mermaid.FlowRow
+  alias Mermaid.Node
 
+  @type t :: %__MODULE__{
+          rows: [FlowRow.t()]
+        }
   @type keyword_list :: [{atom, any}]
 
-  @spec parse(String.t() | [keyword_list()]) :: {:ok, %Flow{} | :error, any}
-  def parse(mermaid_string) when is_binary(mermaid_string) do
-    case MermaidParser.flow(mermaid_string) do
-      {:ok, rows, _, _, _, _} ->
-        parse(rows)
-
-      _ ->
-        {:error, "Failed to parse flow"}
-    end
-  end
-
-  def parse(rows) when is_list(rows) do
+  @spec new([keyword_list()]) :: {:ok, Flow.t() | :error, any}
+  def new(rows) when is_list(rows) do
     desc_lookup = extract_node_descriptions(rows)
 
     flow_rows =
@@ -35,7 +28,28 @@ defmodule MermaidParser.Flow do
         }
       end)
 
-    {:ok, %Flow{rows: flow_rows}}
+    flow = %Flow{rows: flow_rows}
+
+    case flow |> to_digraph() |> :digraph_utils.is_acyclic() do
+      true -> {:ok, flow}
+      false -> {:error, :not_acyclic}
+    end
+  end
+
+  defp to_digraph(%Flow{rows: rows}) do
+    graph = :digraph.new()
+
+    Enum.each(rows, fn %FlowRow{} = row ->
+      ensure_vertex(graph, row.src.id, row.src.desc)
+      ensure_vertex(graph, row.dest.id, row.dest.desc)
+      :digraph.add_edge(graph, row.src.id, row.dest.id, row.event)
+    end)
+
+    graph
+  end
+
+  defp ensure_vertex(graph, id, label) do
+    if :digraph.vertex(graph, id) == false, do: :digraph.add_vertex(graph, id, label)
   end
 
   defp enrich_node(node, lookup) do

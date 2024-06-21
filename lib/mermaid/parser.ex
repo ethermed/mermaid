@@ -1,8 +1,6 @@
-defmodule MermaidParser do
+defmodule Mermaid.Parser do
   import NimbleParsec
   require Logger
-  defdelegate parse(mermaid_flow), to: MermaidParser.Flow
-
   @alphanumeric [?a..?z, ?A..?Z, ?0..?9, ?_]
   # Yup. I used an ascii table. I'm basically Mark Watney.
   # https://www.asciitable.com/
@@ -137,12 +135,11 @@ defmodule MermaidParser do
 
   flow_parse = times(choice([flowchart_header, complete_line, malformed]), min: 1)
 
-  defparsec(:flow, flow_parse)
-  def parse_flow(input), do: flow(input) |> parse_response
+  defparsec(:parse, flow_parse)
+  # def parse(input), do: flow(input) |> parse_response
 
   defp parse_response({:ok, [], rem, _, _, _}), do: {:ok, nil, rem}
   defp parse_response({:ok, result, rem, _, _, _}), do: {:ok, result, rem}
-  # defp parse_response({:error, result, _, _, _, _}), do: {:ok, result}
 
   @spec abort(
           String.t(),
