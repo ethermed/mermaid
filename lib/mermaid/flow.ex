@@ -36,7 +36,7 @@ defmodule Mermaid.Flow do
     end
   end
 
-  defp to_digraph(%Flow{rows: rows}) do
+  def to_digraph(%Flow{rows: rows}) do
     graph = :digraph.new()
 
     Enum.each(rows, fn %FlowRow{} = row ->

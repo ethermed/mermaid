@@ -12,4 +12,6 @@ defmodule Mermaid do
         {:error, :mermaid_parse_error}
     end
   end
+
+  defdelegate to_digraph(flow), to: Mermaid.Flow
 end
