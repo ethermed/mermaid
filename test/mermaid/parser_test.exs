@@ -22,15 +22,15 @@ defmodule Mermaid.ParserTest do
     ]
   ]
   @events [
-    [" --> ", [event: ["empty"]]],
-    ["-->", [event: ["empty"]]],
-    ["   -- event -->  ", [event: ["event"]]],
-    ["-- event string -->", [event: ["event string"]]],
-    ["--event-->", [event: ["event"]]],
-    ["--event string-->", [event: ["event string"]]],
-    ["-->|event|", [event: ["event"]]],
-    ["-->|event string|", [event: ["event string"]]],
-    ["-->| event string |", [event: ["event string"]]]
+    [" --> ", [arc: ["empty"]]],
+    ["-->", [arc: ["empty"]]],
+    ["   -- event -->  ", [arc: ["event"]]],
+    ["-- event string -->", [arc: ["event string"]]],
+    ["--event-->", [arc: ["event"]]],
+    ["--event string-->", [arc: ["event string"]]],
+    ["-->|event|", [arc: ["event"]]],
+    ["-->|event string|", [arc: ["event string"]]],
+    ["-->| event string |", [arc: ["event string"]]]
   ]
 
   describe "nodes" do
@@ -61,7 +61,7 @@ defmodule Mermaid.ParserTest do
         Enum.each(@events, fn [event_inp, event_out] ->
           Enum.each(@nodes, fn [dest_inp, dest_out] ->
             line = "#{src_inp} #{event_inp} #{dest_inp}"
-            expected = [row: [src: src_out] ++ event_out ++ [dest: dest_out]]
+            expected = [row: [source: src_out] ++ event_out ++ [target: dest_out]]
             assert Parser.parse_complete_line(line) == {:ok, expected, ""}
           end)
         end)
@@ -102,39 +102,39 @@ defmodule Mermaid.ParserTest do
 
     expected = [
       row: [
-        src: [id: ["A"], desc: ["Start"]],
-        event: ["empty"],
-        dest: [id: ["B"], desc: ["Is the individual at average risk?"]]
+        source: [id: ["A"], desc: ["Start"]],
+        arc: ["empty"],
+        target: [id: ["B"], desc: ["Is the individual at average risk?"]]
       ],
       row: [
-        src: [id: ["B"]],
-        event: ["Yes"],
-        dest: [id: ["C"], desc: ["Is the individual 45 years old or older?"]]
+        source: [id: ["B"]],
+        arc: ["Yes"],
+        target: [id: ["C"], desc: ["Is the individual 45 years old or older?"]]
       ],
       row: [
-        src: [id: ["B"]],
-        event: ["No"],
-        dest: [
+        source: [id: ["B"]],
+        arc: ["No"],
+        target: [
           id: ["D"],
           desc: ["Does the individual meet any diagnostic criteria?"]
         ]
       ],
       row: [
-        src: [id: ["C"]],
-        event: ["Yes"],
-        dest: [id: ["E"], desc: ["Screening CTC is indicated at 5-year intervals"]]
+        source: [id: ["C"]],
+        arc: ["Yes"],
+        target: [id: ["E"], desc: ["Screening CTC is indicated at 5-year intervals"]]
       ],
       row: [
-        src: [id: ["C"]],
-        event: ["No"],
-        dest: [id: ["F"], desc: ["Not Medically Necessary"]]
+        source: [id: ["C"]],
+        arc: ["No"],
+        target: [id: ["F"], desc: ["Not Medically Necessary"]]
       ],
       row: [
-        src: [id: ["D"]],
-        event: ["Yes good"],
-        dest: [id: ["G"], desc: ["Diagnostic CTC is indicated"]]
+        source: [id: ["D"]],
+        arc: ["Yes good"],
+        target: [id: ["G"], desc: ["Diagnostic CTC is indicated"]]
       ],
-      row: [src: [id: ["D"]], event: ["No not really"], dest: [id: ["F"]]]
+      row: [source: [id: ["D"]], arc: ["No not really"], target: [id: ["F"]]]
     ]
 
     assert {:ok, ^expected, "", _, _, _} = Parser.parse(flow)

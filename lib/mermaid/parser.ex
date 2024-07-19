@@ -79,7 +79,7 @@ defmodule Mermaid.Parser do
     |> concat(pipe)
     |> reduce({__MODULE__, :trim, []})
     |> concat(blankspace)
-    |> tag(:event)
+    |> tag(:arc)
 
   inline_event =
     optional(blankspace)
@@ -88,7 +88,7 @@ defmodule Mermaid.Parser do
     |> concat(arrow)
     |> reduce({__MODULE__, :trim, []})
     |> concat(blankspace)
-    |> tag(:event)
+    |> tag(:arc)
 
   nameless_event =
     optional(blankspace)
@@ -96,7 +96,7 @@ defmodule Mermaid.Parser do
     |> concat(arrow)
     |> replace("empty")
     |> optional(blankspace)
-    |> tag(:event)
+    |> tag(:arc)
 
   event =
     optional(blankspace)
@@ -107,11 +107,11 @@ defmodule Mermaid.Parser do
   def parse_event(input), do: event(input) |> parse_response
 
   complete_line =
-    tag(complete_id, :src)
+    tag(complete_id, :source)
     |> optional(blankspace)
     |> concat(event)
     |> optional(blankspace)
-    |> concat(tag(complete_id, :dest))
+    |> concat(tag(complete_id, :target))
     |> tag(:row)
     |> optional(newline)
 
@@ -126,7 +126,7 @@ defmodule Mermaid.Parser do
     |> optional(newline)
 
   defparsec(:flowchart_header, flowchart_header)
-  def parse_header(input), do: flowchart_header(input) |> IO.inspect() |> parse_response
+  def parse_header(input), do: flowchart_header(input) |> parse_response
 
   malformed =
     optional(utf8_string([not: ?\n], min: 1))
@@ -136,7 +136,6 @@ defmodule Mermaid.Parser do
   flow_parse = times(choice([flowchart_header, complete_line, malformed]), min: 1)
 
   defparsec(:parse, flow_parse)
-  # def parse(input), do: flow(input) |> parse_response
 
   defp parse_response({:ok, [], rem, _, _, _}), do: {:ok, nil, rem}
   defp parse_response({:ok, result, rem, _, _, _}), do: {:ok, result, rem}
