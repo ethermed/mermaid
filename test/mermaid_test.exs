@@ -18,46 +18,64 @@ defmodule MermaidTest do
 
     flow = [
       %{
-        source: %{id: "A", desc: "Start"},
+        source_id: "A",
+        source_desc: "Start",
         arc: "empty",
-        target: %{id: "B", desc: "Is the individual at average risk?"}
+        target_id: "B",
+        target_desc: "Is the individual at average risk?"
       },
       %{
-        source: %{id: "B", desc: "Is the individual at average risk?"},
+        source_id: "B",
+        source_desc: "Is the individual at average risk?",
         arc: "Yes",
-        target: %{id: "C", desc: "Is the individual 45 years old or older?"}
+        target_id: "C",
+        target_desc: "Is the individual 45 years old or older?"
       },
       %{
-        source: %{id: "B", desc: "Is the individual at average risk?"},
+        source_id: "B",
+        source_desc: "Is the individual at average risk?",
         arc: "No",
-        target: %{id: "D", desc: "Does the individual meet any diagnostic criteria?"}
+        target_id: "D",
+        target_desc: "Does the individual meet any diagnostic criteria?"
       },
       %{
-        source: %{id: "C", desc: "Is the individual 45 years old or older?"},
+        source_id: "C",
+        source_desc: "Is the individual 45 years old or older?",
         arc: "Yes",
-        target: %{id: "E", desc: "Screening CTC is indicated at 5-year intervals"}
+        target_id: "E",
+        target_desc: "Screening CTC is indicated at 5-year intervals"
       },
       %{
-        source: %{id: "C", desc: "Is the individual 45 years old or older?"},
+        source_id: "C",
+        source_desc: "Is the individual 45 years old or older?",
         arc: "No",
-        target: %{id: "F", desc: "Not Medically Necessary"}
+        target_id: "F",
+        target_desc: "Not Medically Necessary"
       },
       %{
-        source: %{id: "D", desc: "Does the individual meet any diagnostic criteria?"},
+        source_id: "D",
+        source_desc: "Does the individual meet any diagnostic criteria?",
         arc: "Yes good",
-        target: %{id: "G", desc: "Diagnostic CTC is indicated"}
+        target_id: "G",
+        target_desc: "Diagnostic CTC is indicated"
       },
       %{
-        source: %{id: "D", desc: "Does the individual meet any diagnostic criteria?"},
+        source_id: "D",
+        source_desc: "Does the individual meet any diagnostic criteria?",
         arc: "No not really",
-        target: %{id: "F", desc: "Not Medically Necessary"}
+        target_id: "F",
+        target_desc: "Not Medically Necessary"
       }
     ]
 
     {:ok, actual_flow} = Mermaid.parse(mermaid_flow)
 
     Enum.each(flow, fn expected_step ->
-      assert_map_in_list(expected_step, actual_flow, ~w(source arc target)a)
+      assert_map_in_list(
+        expected_step,
+        actual_flow,
+        ~w(source_id source_desc arc target_id target_desc)a
+      )
     end)
 
     # assert {:ok, flow} == Mermaid.parse(mermaid_flow)

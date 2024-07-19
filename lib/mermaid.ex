@@ -18,9 +18,11 @@ defmodule Mermaid do
   alias Mermaid.Parser
 
   @type src_arc_target :: %{
-          source: Mermaid.Node.t(),
+          source_id: String.t(),
+          source_desc: String.t(),
           arc: String.t(),
-          target: Mermaid.Node.t()
+          target_id: String.t(),
+          target_desc: String.t()
         }
   @spec parse(String.t()) :: {:ok, [src_arc_target()]} | {:error, atom()}
   def parse(mermaid_string) do
@@ -40,13 +42,21 @@ defmodule Mermaid do
       src_arc_targets
       |> Keyword.get_values(:row)
       |> Enum.map(fn row ->
-        source = Keyword.get(row, :source)
-        target = Keyword.get(row, :target)
         arc = Keyword.get(row, :arc) |> Enum.at(0)
 
+        source = Keyword.get(row, :source)
+        source_id = Access.get(source, :id) |> Enum.at(0)
+        source_desc = Map.get(desc_lookup, source_id)
+
+        target = Keyword.get(row, :target)
+        target_id = Access.get(target, :id) |> Enum.at(0)
+        target_desc = Map.get(desc_lookup, target_id)
+
         %{
-          source: enrich_node(source, desc_lookup),
-          target: enrich_node(target, desc_lookup),
+          source_id: source_id,
+          source_desc: source_desc,
+          target_id: target_id,
+          target_desc: target_desc,
           arc: arc
         }
       end)
@@ -67,9 +77,9 @@ defmodule Mermaid do
     graph = :digraph.new()
 
     Enum.each(rows, fn %{} = row ->
-      ensure_vertex(graph, row.source.id, row.source.desc)
-      ensure_vertex(graph, row.target.id, row.target.desc)
-      :digraph.add_edge(graph, row.source.id, row.target.id, row.arc)
+      ensure_vertex(graph, row.source_id, row.source_desc)
+      ensure_vertex(graph, row.target_id, row.target_desc)
+      :digraph.add_edge(graph, row.source_id, row.target_id, row.arc)
     end)
 
     graph
@@ -79,11 +89,11 @@ defmodule Mermaid do
     if :digraph.vertex(graph, id) == false, do: :digraph.add_vertex(graph, id, label)
   end
 
-  defp enrich_node(node, lookup) do
-    id = Access.get(node, :id) |> Enum.at(0)
-    desc = Map.get(lookup, id)
-    %{id: id, desc: desc}
-  end
+  # defp enrich_node(node, lookup) do
+  #   id = Access.get(node, :id) |> Enum.at(0)
+  #   desc = Map.get(lookup, id)
+  #   %{id: id, desc: desc}
+  # end
 
   # In mermaid, you only have to include the description of a node once. After that, only
   # the id is needed. Just for simplicity, we'll include the description with every node.
