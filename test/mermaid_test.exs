@@ -80,4 +80,62 @@ defmodule MermaidTest do
 
     # assert {:ok, flow} == Mermaid.parse(mermaid_flow)
   end
+
+  test "large flow parse" do
+    mermaid_flow = """
+    flowchart TD
+    A["Is there documented anal cancer?"] -->|Yes| B["Is the imaging for Diagnostic Workup?"]
+    A -->|No| Z["Procedure not Medically Necessary"]
+
+    B -->|Yes| C["Is it a CT Chest?"]
+    B -->|No| D["Is the imaging for Management?"]
+
+    C -->|Yes| E["Procedure Medically Necessary"]
+    C -->|No| F["Is it a CT Abdomen and Pelvis?"]
+
+    F -->|Yes| G["Procedure Medically Necessary"]
+    F -->|No| H["Is it an MRI Pelvis?"]
+
+    H -->|Yes| I["Procedure Medically Necessary"]
+    H -->|No| J["Is it an FDG-PET/CT?"]
+
+    J -->|Yes| K["Can standard imaging be performed and is it diagnostic for metastatic disease?"]
+    K -->|Yes| L["Procedure not Medically Necessary"]
+    K -->|No| M["Procedure Medically Necessary"]
+
+    D -->|Yes| N["Is it a CT Chest?"]
+    D -->|No| O["Is the imaging for Surveillance?"]
+
+    N -->|Yes| P["Procedure Medically Necessary"]
+    N -->|No| Q["Is it a CT Abdomen and Pelvis?"]
+
+    Q -->|Yes| R["Procedure Medically Necessary"]
+    Q -->|No| S["Is it an MRI Pelvis?"]
+
+    S -->|Yes| T["Procedure Medically Necessary"]
+    S -->|No| U["Is it an FDG-PET/CT?"]
+
+    U -->|Yes| V["Is it for radiation planning for definitive treatment or is standard imaging nondiagnostic for recurrent or progressive disease?"]
+    V -->|Yes| W["Procedure Medically Necessary"]
+    V -->|No| X["Procedure not Medically Necessary"]
+
+    O -->|Yes| Y["Is it a CT Chest?"]
+    O -->|No| AA["Procedure not Medically Necessary"]
+
+    Y -->|Yes| BB["Is it especially useful in T3-4 tumors in the first 3 years?"]
+    BB -->|Yes| CC["Procedure Medically Necessary"]
+    BB -->|No| DD["Procedure not Medically Necessary"]
+
+    Y -->|No| EE["Is it a CT Abdomen and Pelvis?"]
+    EE -->|Yes| FF["Is it especially useful in T3-4 tumors in the first 3 years?"]
+    FF -->|Yes| GG["Procedure Medically Necessary"]
+    FF -->|No| HH["Procedure not Medically Necessary"]
+
+    EE -->|No| II["Is it an MRI Pelvis?"]
+    II -->|Yes| JJ["Procedure Medically Necessary"]
+    II -->|No| KK["Procedure not Medically Necessary"]
+    """
+
+    assert {:ok, actual_flow} = Mermaid.parse(mermaid_flow)
+  end
 end

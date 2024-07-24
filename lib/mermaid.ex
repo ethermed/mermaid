@@ -16,6 +16,7 @@ defmodule Mermaid do
   •	The arc (or directed edge) connects Node 1 to Node 2.
   """
   alias Mermaid.Parser
+  require Logger
 
   @type src_arc_target :: %{
           source_id: String.t(),
@@ -30,7 +31,8 @@ defmodule Mermaid do
       {:ok, src_arc_targets, _, _, _, _} ->
         clean(src_arc_targets)
 
-      _ ->
+      err ->
+        Logger.critical("Error parsing mermaid string: #{inspect(err)}")
         {:error, :mermaid_parse_error}
     end
   end
