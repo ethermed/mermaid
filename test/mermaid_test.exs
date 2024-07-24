@@ -136,6 +136,6 @@ defmodule MermaidTest do
     II -->|No| KK["Procedure not Medically Necessary"]
     """
 
-    assert {:ok, actual_flow} = Mermaid.parse(mermaid_flow)
+    assert {:ok, _actual_flow} = Mermaid.parse(mermaid_flow)
   end
 end

@@ -116,6 +116,10 @@ defmodule Mermaid.Parser do
     |> tag(:row)
     |> optional(newline)
 
+  node_only_line =
+    tag(complete_id, :node)
+    |> concat(newline)
+
   defparsec(:complete_line, complete_line)
   def parse_complete_line(input), do: complete_line(input) |> parse_response
 
@@ -134,7 +138,10 @@ defmodule Mermaid.Parser do
     |> string("\n")
     |> pre_traverse(:abort)
 
-  flow_parse = times(choice([flowchart_header, empty_line, complete_line, malformed]), min: 1)
+  flow_parse =
+    times(choice([flowchart_header, empty_line, complete_line, node_only_line, malformed]),
+      min: 1
+    )
 
   defparsec(:parse, flow_parse)
 

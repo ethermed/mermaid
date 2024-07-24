@@ -43,6 +43,9 @@ defmodule Mermaid do
     src_arc_targets =
       src_arc_targets
       |> Keyword.get_values(:row)
+      |> Enum.reject(fn row ->
+        !is_nil(Keyword.get(row, :node))
+      end)
       |> Enum.map(fn row ->
         arc = Keyword.get(row, :arc) |> Enum.at(0)
 
@@ -120,8 +123,10 @@ defmodule Mermaid do
     |> Enum.flat_map(fn row ->
       [
         Keyword.get(row, :source),
-        Keyword.get(row, :target)
+        Keyword.get(row, :target),
+        Keyword.get(row, :node)
       ]
     end)
+    |> Enum.reject(&is_nil/1)
   end
 end

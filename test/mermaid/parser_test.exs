@@ -19,6 +19,10 @@ defmodule Mermaid.ParserTest do
     [
       ~s(  B{Is the individual at average risk?}),
       [id: ["B"], desc: ["Is the individual at average risk?"]]
+    ],
+    [
+      ~s(B ),
+      [id: ["B"]]
     ]
   ]
   @events [
@@ -72,6 +76,16 @@ defmodule Mermaid.ParserTest do
       line = "  B -->|Yes| C{Is the individual 45 years old or older?}"
       assert {:ok, _, ""} = Parser.parse_complete_line(line)
     end
+
+    test "node only" do
+      line = """
+      flowchart TD
+        Z1["Procedure Medically Necessary"]
+      """
+
+      expected_result = [node: [id: ["Z1"], desc: ["Procedure Medically Necessary"]]]
+      assert {:ok, ^expected_result, "", _, _, _} = Parser.parse(line)
+    end
   end
 
   describe "flowchart tag" do
@@ -87,17 +101,16 @@ defmodule Mermaid.ParserTest do
     end
   end
 
-  @tag :focus
   test "do it all" do
     flow = """
     flowchart TD
-      A[Start] --> B{Is the individual at average risk?}
-      B -->|Yes| C{Is the individual 45 years old or older?}
-      B -->|No| D{Does the individual meet any diagnostic criteria?}
-      C -->|Yes| E[Screening CTC is indicated at 5-year intervals]
-      C -->|No| F[Not Medically Necessary]
-      D -->|Yes good| G[Diagnostic CTC is indicated]
-      D --No not really--> F
+    A[Start] --> B{Is the individual at average risk?}
+    B -->|Yes| C{Is the individual 45 years old or older?}
+    B -->|No| D{Does the individual meet any diagnostic criteria?}
+    C -->|Yes| E[Screening CTC is indicated at 5-year intervals]
+    C -->|No| F[Not Medically Necessary]
+    D -->|Yes good| G[Diagnostic CTC is indicated]
+    D --No not really--> F
     """
 
     expected = [
@@ -135,6 +148,40 @@ defmodule Mermaid.ParserTest do
         target: [id: ["G"], desc: ["Diagnostic CTC is indicated"]]
       ],
       row: [source: [id: ["D"]], arc: ["No not really"], target: [id: ["F"]]]
+    ]
+
+    assert {:ok, ^expected, "", _, _, _} = Parser.parse(flow)
+  end
+
+  test "flow with node only lines" do
+    flow = """
+    flowchart TD
+    A["A: Q"] -->|No| B["B: Q"]
+    B -->|Yes| C["C: Q"]
+    B -->|No| D
+    D["D: Q"]
+    """
+
+    expected = [
+      {:row,
+       [
+         source: [id: ["A"], desc: ["A: Q"]],
+         arc: ["No"],
+         target: [id: ["B"], desc: ["B: Q"]]
+       ]},
+      {:row,
+       [
+         source: [id: ["B"]],
+         arc: ["Yes"],
+         target: [id: ["C"], desc: ["C: Q"]]
+       ]},
+      {:row,
+       [
+         source: [id: ["B"]],
+         arc: ["No"],
+         target: [id: ["D"]]
+       ]},
+      node: [{:id, ["D"]}, {:desc, ["D: Q"]}]
     ]
 
     assert {:ok, ^expected, "", _, _, _} = Parser.parse(flow)
