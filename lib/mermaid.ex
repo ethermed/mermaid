@@ -75,23 +75,23 @@ defmodule Mermaid do
   defp is_acyclic(src_arc_targets) do
     src_arc_targets
     |> to_digraph()
-    |> :digraph_utils.is_acyclic()
+    |> DG.is_acyclic()
   end
 
   def to_digraph(rows) do
-    graph = :digraph.new()
+    graph = DG.new()
 
     Enum.each(rows, fn %{} = row ->
       ensure_vertex(graph, row.source_id, row.source_desc)
       ensure_vertex(graph, row.target_id, row.target_desc)
-      :digraph.add_edge(graph, row.source_id, row.target_id, row.arc)
+      DG.add_edge(graph, row.source_id, row.target_id, row.arc)
     end)
 
     graph
   end
 
   defp ensure_vertex(graph, id, label) do
-    if :digraph.vertex(graph, id) == false, do: :digraph.add_vertex(graph, id, label)
+    if DG.vertex(graph, id) == false, do: DG.add_vertex(graph, id, label)
   end
 
   # defp enrich_node(node, lookup) do
