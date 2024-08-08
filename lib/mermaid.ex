@@ -94,12 +94,6 @@ defmodule Mermaid do
     if DG.vertex(graph, id) == false, do: DG.add_vertex(graph, id, label)
   end
 
-  # defp enrich_node(node, lookup) do
-  #   id = Access.get(node, :id) |> Enum.at(0)
-  #   desc = Map.get(lookup, id)
-  #   %{id: id, desc: desc}
-  # end
-
   # In mermaid, you only have to include the description of a node once. After that, only
   # the id is needed. Just for simplicity, we'll include the description with every node.
   defp extract_node_descriptions(rows) do
@@ -118,15 +112,26 @@ defmodule Mermaid do
   end
 
   defp get_all_nodes(rows) do
+    nodes =
+      rows
+      |> Keyword.get_values(:node)
+      |> Enum.map(fn node ->
+        [
+          id: Keyword.get(node, :id),
+          desc: Keyword.get(node, :desc)
+        ]
+      end)
+
     rows
     |> Keyword.get_values(:row)
     |> Enum.flat_map(fn row ->
       [
         Keyword.get(row, :source),
-        Keyword.get(row, :target),
-        Keyword.get(row, :node)
+        Keyword.get(row, :target)
       ]
     end)
+    |> Enum.concat(nodes)
     |> Enum.reject(&is_nil/1)
+    |> Enum.dedup()
   end
 end
