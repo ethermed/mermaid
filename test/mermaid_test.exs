@@ -4,19 +4,8 @@ defmodule MermaidTest do
   doctest Mermaid
   alias Mermaid
 
-  test "parse/1" do
-    mermaid_flow = """
-    flowchart TD
-      A[Start] --> B{Is the individual at average risk?}
-      B -->|Yes| C{Is the individual 45 years old or older?}
-      B -->|No| D{Does the individual meet any diagnostic criteria?}
-      C -->|Yes| E[Screening CTC is indicated at 5-year intervals]
-      C -->|No| F[Not Medically Necessary]
-      D -->|Yes good| G[Diagnostic CTC is indicated]
-      D --No not really--> F
-    """
-
-    flow = [
+  describe "parse/1" do
+    @flow [
       %{
         source_id: "A",
         source_desc: "Start",
@@ -68,17 +57,58 @@ defmodule MermaidTest do
       }
     ]
 
-    {:ok, actual_flow} = Mermaid.parse(mermaid_flow)
+    test "nodes defined with edges" do
+      mermaid_flow = """
+      flowchart TD
+        A[Start] --> B{Is the individual at average risk?}
+        B -->|Yes| C{Is the individual 45 years old or older?}
+        B -->|No| D{Does the individual meet any diagnostic criteria?}
+        C -->|Yes| E[Screening CTC is indicated at 5-year intervals]
+        C -->|No| F[Not Medically Necessary]
+        D -->|Yes good| G[Diagnostic CTC is indicated]
+        D --No not really--> F
+      """
 
-    Enum.each(flow, fn expected_step ->
-      assert_map_in_list(
-        expected_step,
-        actual_flow,
-        ~w(source_id source_desc arc target_id target_desc)a
-      )
-    end)
+      {:ok, actual_flow} = Mermaid.parse(mermaid_flow)
 
-    # assert {:ok, flow} == Mermaid.parse(mermaid_flow)
+      Enum.each(@flow, fn expected_step ->
+        assert_map_in_list(
+          expected_step,
+          actual_flow,
+          ~w(source_id source_desc arc target_id target_desc)a
+        )
+      end)
+    end
+
+    test "nodes defined separately from edges" do
+      mermaid_flow = """
+      flowchart TD
+        A[Start]
+        B[Is the individual at average risk?]
+        C[Is the individual 45 years old or older?]
+        D[Does the individual meet any diagnostic criteria?]
+        E[Screening CTC is indicated at 5-year intervals]
+        F[Not Medically Necessary]
+        G[Diagnostic CTC is indicated]
+        A --> B
+        B -->|Yes| C
+        B -->|No| D
+        C -->|Yes| E
+        C -->|No| F
+        D -->|Yes good| G
+        D --No not really--> F
+      """
+
+      {:ok, actual_flow} = Mermaid.parse(mermaid_flow)
+
+      Enum.each(@flow, fn expected_step ->
+        assert_map_in_list(
+          expected_step,
+          actual_flow,
+          ~w(source_id source_desc arc target_id target_desc)a
+        )
+      end)
+    end
   end
 
   test "large flow parse" do
