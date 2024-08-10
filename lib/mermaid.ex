@@ -115,6 +115,7 @@ defmodule Mermaid do
     nodes =
       rows
       |> Keyword.get_values(:node)
+      |> Enum.filter(&(Keyword.has_key?(&1, :id) and Keyword.has_key?(&1, :desc)))
       |> Enum.map(fn node ->
         [
           id: Keyword.get(node, :id),
