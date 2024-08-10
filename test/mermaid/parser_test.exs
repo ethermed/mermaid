@@ -89,6 +89,17 @@ defmodule Mermaid.ParserTest do
   end
 
   describe "flowchart tag" do
+    test "ignore text prior to flowchart header definition" do
+      line = """
+      random junk
+      flowchart
+      TD
+      flowchart TD
+      """
+
+      assert {:ok, [], "", _, _, _} = Parser.flowchart_header(line)
+    end
+
     test "flowchart tag" do
       line = "flowchart TD"
       assert {:ok, [], "", _, _, _} = Parser.flowchart_header(line)
