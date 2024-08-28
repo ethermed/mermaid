@@ -70,7 +70,7 @@ defmodule Mermaid.Parser do
   arrow = ignore(ascii_char(@arrow))
   pipe = ignore(string("|"))
   newline = ignore(ascii_char([?\n]))
-  empty_line = ignore(ascii_string([?\n], min: 1))
+  empty_line = ignore(ascii_string([?\n, ?\t, ?\s], min: 1))
   # ignore_rest_of_line = ignore(blankspace) |> ignore(newline)
 
   pipe_event =

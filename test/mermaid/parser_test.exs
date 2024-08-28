@@ -86,6 +86,24 @@ defmodule Mermaid.ParserTest do
       expected_result = [node: [id: ["Z1"], desc: ["Procedure Medically Necessary"]]]
       assert {:ok, ^expected_result, "", _, _, _} = Parser.parse(line)
     end
+
+    test "blank lines" do
+      line = """
+      flowchart TD
+        Z1["Procedure Medically Necessary"]
+        \s\s\s
+        \t
+
+        Z2["Procedure Medically Necessary"]
+      """
+
+      expected_result = [
+        node: [id: ["Z1"], desc: ["Procedure Medically Necessary"]],
+        node: [id: ["Z2"], desc: ["Procedure Medically Necessary"]]
+      ]
+
+      assert {:ok, ^expected_result, "", _, _, _} = Parser.parse(line)
+    end
   end
 
   describe "flowchart tag" do
