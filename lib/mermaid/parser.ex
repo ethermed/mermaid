@@ -123,17 +123,22 @@ defmodule Mermaid.Parser do
   defparsec(:complete_line, complete_line)
   def parse_complete_line(input), do: complete_line(input) |> parse_response
 
-  flowchart_types =
+  graph_types =
     choice([
       string("flowchart TD"),
       string("flowchart TB"),
       string("flowchart BT"),
       string("flowchart RL"),
-      string("flowchart LR")
+      string("flowchart LR"),
+      string("graph TD"),
+      string("graph TB"),
+      string("graph BT"),
+      string("graph RL"),
+      string("graph LR")
     ])
 
   flowchart_header =
-    eventually(ignore(flowchart_types))
+    eventually(ignore(graph_types))
     |> optional(blankspace)
     |> optional(newline)
 
