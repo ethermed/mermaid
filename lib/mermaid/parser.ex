@@ -75,6 +75,7 @@ defmodule Mermaid.Parser do
 
   pipe_event =
     arrow
+    |> optional(blankspace)
     |> concat(pipe)
     |> ascii_string([not: ?|], min: 1)
     |> concat(pipe)
@@ -118,6 +119,7 @@ defmodule Mermaid.Parser do
 
   node_only_line =
     tag(complete_id, :node)
+    |> optional(blankspace)
     |> concat(newline)
 
   defparsec(:complete_line, complete_line)
